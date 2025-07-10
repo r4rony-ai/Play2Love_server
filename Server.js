@@ -1,24 +1,33 @@
 const express = require("express");
 const http = require("http");
+const { Server } = require("socket.io");
+const cors = require("cors");
+
 const app = express();
+app.use(cors());
+
 const server = http.createServer(app);
-const io = require("socket.io")(server, {
-  cors: { origin: "*" }
+
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
 });
 
 io.on("connection", (socket) => {
-  console.log("User connected");
-
-  socket.on("join", (room) => {
+  console.log("User connected: " + socket.id);
+  socket.on("join-room", (room) => {
     socket.join(room);
-    socket.to(room).emit("joined", "Your partner has joined!");
+    console.log(`${socket.id} joined room: ${room}`);
   });
 
-  socket.on("draw", ({ room, x, y }) => {
-    socket.to(room).emit("draw", { x, y });
+  socket.on("draw", (data) => {
+    socket.to(data.room).emit("draw", data);
   });
 });
 
-server.listen(3000, () => {
-  console.log("✅ Socket.IO server running on port 3000");
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
